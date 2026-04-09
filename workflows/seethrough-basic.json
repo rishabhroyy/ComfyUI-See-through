@@ -1,6 +1,6 @@
 {
   "id": "seethrough-basic-workflow",
-  "revision": 1,
+  "revision": 0,
   "last_node_id": 27,
   "last_link_id": 22,
   "nodes": [
@@ -16,18 +16,13 @@
         151.140625
       ],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
-          "name": "layers",
-          "type": "SEETHROUGH_LAYERS",
-          "link": 19
-        },
-        {
           "name": "layers_depth",
           "type": "SEETHROUGH_LAYERS_DEPTH",
-          "link": null
+          "link": 18
         }
       ],
       "outputs": [
@@ -66,7 +61,7 @@
         163.140625
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
@@ -77,12 +72,7 @@
       ],
       "outputs": [
         {
-          "name": "rgba_psd_path",
-          "type": "STRING",
-          "links": null
-        },
-        {
-          "name": "depth_psd_path",
+          "name": "info_file",
           "type": "STRING",
           "links": null
         }
@@ -92,8 +82,8 @@
       },
       "widgets_values": [
         "seethrough",
-        true,
-        false
+        "Download PSD",
+        "Download Depth PSD"
       ]
     },
     {
@@ -108,7 +98,7 @@
         279.140625
       ],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -122,6 +112,55 @@
         "Node name for S&R": "PreviewImage"
       },
       "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "SeeThrough_GenerateDepth",
+      "pos": [
+        -2990.406661559039,
+        -857.0530080321091
+      ],
+      "size": [
+        352.0625,
+        177.75
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "layers",
+          "type": "SEETHROUGH_LAYERS",
+          "link": 19
+        },
+        {
+          "name": "depth_model",
+          "type": "SEETHROUGH_DEPTH_MODEL",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "layers_depth",
+          "type": "SEETHROUGH_LAYERS_DEPTH",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "preview",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SeeThrough_GenerateDepth"
+      },
+      "widgets_values": [
+        1091757904,
+        "randomize",
+        -1
+      ]
     },
     {
       "id": 24,
@@ -171,6 +210,39 @@
         "randomize",
         1024,
         30
+      ]
+    },
+    {
+      "id": 25,
+      "type": "SeeThrough_LoadDepthModel",
+      "pos": [
+        -3389.9701923750113,
+        -630.2745792126645
+      ],
+      "size": [
+        305.5,
+        161.796875
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "depth_model",
+          "type": "SEETHROUGH_DEPTH_MODEL",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SeeThrough_LoadDepthModel"
+      },
+      "widgets_values": [
+        "24yearsold/seethroughv0.0.1_marigold",
+        true,
+        false
       ]
     },
     {
@@ -264,12 +336,28 @@
       "IMAGE"
     ],
     [
-      19,
-      24,
+      18,
+      23,
       0,
       20,
       0,
+      "SEETHROUGH_LAYERS_DEPTH"
+    ],
+    [
+      19,
+      24,
+      0,
+      23,
+      0,
       "SEETHROUGH_LAYERS"
+    ],
+    [
+      20,
+      25,
+      0,
+      23,
+      1,
+      "SEETHROUGH_DEPTH_MODEL"
     ],
     [
       21,
