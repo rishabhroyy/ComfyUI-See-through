@@ -82,8 +82,8 @@
       },
       "widgets_values": [
         "seethrough",
-        "Download PSD",
-        "Download Depth PSD"
+        true,
+        false
       ]
     },
     {

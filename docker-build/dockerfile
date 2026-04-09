@@ -1,0 +1,25 @@
+# Use the official RunPod ComfyUI base image
+FROM runpod/worker-comfyui:v2-base
+
+# 1. Install System Dependencies (Needed for SeeThrough/OpenCV)
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Clone your custom nodes directly into the image
+# Replace these URLs with your specific custom node repos
+WORKDIR /comfyui/custom_nodes
+RUN git clone https://github.com/rishabhroyy/ComfyUI-See-through.git
+
+# 3. Install Python dependencies for your custom nodes
+RUN pip install --no-cache-dir -r ComfyUI-See-through/requirements.txt
+
+# 4. Bake in the Models (The "Heavy" part)
+# We place them in the ComfyUI models directory so they are ready on boot
+COPY seethroughv0.0.2_layerdiff3d_nf4 /comfyui/models/SeeThrough/
+COPY seethroughv0.0.2_layerdiff3d_nf4 /comfyui/models/SeeThrough/
+
+# Set the working directory back to the root for the worker to start
+WORKDIR /
