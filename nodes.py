@@ -721,11 +721,14 @@ class SeeThrough_PostProcess:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "layers_depth": ("SEETHROUGH_LAYERS_DEPTH",),
                 "tblr_split": ("BOOLEAN", {"default": True,
                                            "tooltip": "Split symmetric parts (eyes, ears, handwear) into left/right"}),
                 "use_lama": ("BOOLEAN", {"default": True,
                                          "tooltip": "Use LaMa inpainting for hair splitting (better quality). Falls back to OpenCV if disabled."}),
+            },
+            "optional": {
+                "layers": ("SEETHROUGH_LAYERS",),
+                "layers_depth": ("SEETHROUGH_LAYERS_DEPTH",),
             },
         }
 
@@ -734,26 +737,39 @@ class SeeThrough_PostProcess:
     FUNCTION = "process"
     CATEGORY = "SeeThrough"
 
-    def process(self, layers_depth, tblr_split=True, use_lama=True):
-        layer_dict = layers_depth.layer_dict
-        depth_dict = layers_depth.depth_dict
-        fullpage = layers_depth.fullpage
-        resolution = layers_depth.resolution
+    def process(self, tblr_split=True, use_lama=True, layers=None, layers_depth=None):
+        if layers_depth is not None:
+            layer_dict = layers_depth.layer_dict
+            depth_dict = layers_depth.depth_dict
+            fullpage = layers_depth.fullpage
+            resolution = layers_depth.resolution
+            has_depth = True
+        elif layers is not None:
+            layer_dict = layers.layer_dict
+            depth_dict = {}
+            fullpage = layers.fullpage
+            resolution = layers.resolution
+            has_depth = False
+        else:
+            raise ValueError("SeeThrough_PostProcess requires either 'layers' or 'layers_depth' input.")
 
-        print("[SeeThrough] PostProcess: splitting & clustering...", flush=True)
+        print(f"[SeeThrough] PostProcess: splitting & clustering (has_depth={has_depth})...", flush=True)
 
-        # Build tag2pinfo
+        # Build tag2pinfo — depth is optional per-tag
         tag2pinfo = {}
-        for tag in layer_dict:
+        for idx, tag in enumerate(layer_dict):
             img = layer_dict[tag]
-            if tag not in depth_dict:
-                continue
-            depth = depth_dict[tag]
             mask = img[..., -1] > 10
             if not np.any(mask):
                 continue
-            tag2pinfo[tag] = {"img": img, "depth": depth, "xyxy": [0, 0, resolution, resolution],
-                              "mask": mask, "tag": tag}
+            entry = {"img": img, "xyxy": [0, 0, resolution, resolution], "mask": mask, "tag": tag}
+            if tag in depth_dict:
+                entry["depth"] = depth_dict[tag]
+            else:
+                # Flat dummy depth: use tag index so ordering is stable
+                entry["depth"] = np.full((resolution, resolution), fill_value=idx / max(len(layer_dict), 1),
+                                         dtype=np.float32)
+            tag2pinfo[tag] = entry
 
         # Eye splitting (v2 composite 'eyes')
         if "eyes" in tag2pinfo:
