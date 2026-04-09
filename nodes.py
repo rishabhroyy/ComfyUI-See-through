@@ -839,7 +839,7 @@ class SeeThrough_PostProcess:
         return (parts_data, preview)
 
 
-def _build_psd_python(tag2pinfo, canvas_w, canvas_h, sorted_tags, output_dir, psd_path, psd_type="rgba"):
+def _build_psd_python(tag2pinfo, canvas_w, canvas_h, sorted_tags, psd_path, psd_type="rgba"):
     """Compile a PSD file from layer data using psd-tools. psd_type: 'rgba' or 'depth'."""
     from PIL import Image
     from psd_tools import PSDImage
