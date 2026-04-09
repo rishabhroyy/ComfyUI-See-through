@@ -841,6 +841,55 @@ class SeeThrough_PostProcess:
         return (parts_data, preview)
 
 
+def _build_psd_python(tag2pinfo, canvas_w, canvas_h, sorted_tags, output_dir, filename_prefix, ts, uid, psd_type="rgba"):
+    """Compile a PSD file from layer data using psd-tools. psd_type: 'rgba' or 'depth'."""
+    from PIL import Image
+    from psd_tools import PSDImage
+
+    is_depth = psd_type == "depth"
+    suffix = "_depth" if is_depth else ""
+
+    # PSD document in RGBA mode so layers keep transparency
+    psd = PSDImage.new("RGBA", (canvas_w, canvas_h))
+
+    # sorted_tags is back-to-front (highest depth_median first = furthest back).
+    # psd-tools stacks layers so the last appended is on top, so we iterate as-is.
+    for tag in sorted_tags:
+        pinfo = tag2pinfo[tag]
+        img_arr = pinfo.get("img")
+        depth_arr = pinfo.get("depth")
+        if img_arr is None:
+            continue
+
+        xyxy = pinfo.get("xyxy", [0, 0, img_arr.shape[1], img_arr.shape[0]])
+        x1, y1, x2, y2 = [int(v) for v in xyxy]
+        lw, lh = x2 - x1, y2 - y1
+        if lw <= 0 or lh <= 0:
+            continue
+
+        if is_depth:
+            if depth_arr is None:
+                continue
+            if depth_arr.ndim == 2:
+                d8 = depth_arr if depth_arr.dtype == np.uint8 else (np.clip(depth_arr, 0, 1) * 255).astype(np.uint8)
+                rgb = np.stack([d8, d8, d8], axis=-1)
+                alpha = (img_arr[..., -1] > 10).astype(np.uint8) * 255
+                rgba = np.concatenate([rgb, alpha[..., None]], axis=-1)
+            else:
+                rgba = depth_arr
+            pil_img = Image.fromarray(rgba.astype(np.uint8), mode="RGBA").crop((0, 0, lw, lh))
+        else:
+            pil_img = Image.fromarray(img_arr.astype(np.uint8), mode="RGBA").crop((0, 0, lw, lh))
+
+        psd.create_pixel_layer(pil_img, name=tag, top=y1, left=x1)
+
+    psd_filename = f"{filename_prefix}_{ts}_{uid}{suffix}.psd"
+    psd_path = os.path.join(output_dir, psd_filename)
+    psd.save(psd_path)
+    print(f"[SeeThrough] PSD saved: {psd_path}", flush=True)
+    return psd_path
+
+
 class SeeThrough_SavePSD:
     @classmethod
     def INPUT_TYPES(s):
@@ -848,16 +897,18 @@ class SeeThrough_SavePSD:
             "required": {
                 "parts": ("SEETHROUGH_PARTS",),
                 "filename_prefix": ("STRING", {"default": "seethrough"}),
+                "save_rgba_psd": ("BOOLEAN", {"default": True, "tooltip": "Compile and save RGBA layer PSD to output folder"}),
+                "save_depth_psd": ("BOOLEAN", {"default": False, "tooltip": "Compile and save depth layer PSD to output folder"}),
             },
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("info_file",)
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("rgba_psd_path", "depth_psd_path")
     FUNCTION = "save"
     CATEGORY = "SeeThrough"
     OUTPUT_NODE = True
 
-    def save(self, parts, filename_prefix="seethrough"):
+    def save(self, parts, filename_prefix="seethrough", save_rgba_psd=True, save_depth_psd=False):
         from PIL import Image
         import json
 
@@ -871,6 +922,7 @@ class SeeThrough_SavePSD:
 
         sorted_tags = sorted(tag2pinfo.keys(), key=lambda t: tag2pinfo[t].get("depth_median", 1), reverse=True)
 
+        # Save individual layer PNGs + JSON (kept for JS fallback / compatibility)
         layer_info_list = []
         for tag in sorted_tags:
             pinfo = tag2pinfo[tag]
@@ -909,8 +961,27 @@ class SeeThrough_SavePSD:
         with open(log_path, "w") as f:
             f.write(info_filename)
 
-        print(f"[SeeThrough] {len(layer_info_list)} layers saved. Use 'Download PSD' button to generate PSD.", flush=True)
-        return (info_path,)
+        # Compile PSD files in Python
+        rgba_psd_path = ""
+        depth_psd_path = ""
+
+        if save_rgba_psd:
+            try:
+                rgba_psd_path = _build_psd_python(tag2pinfo, canvas_w, canvas_h, sorted_tags,
+                                                   output_dir, filename_prefix, ts, uid, psd_type="rgba")
+            except Exception as e:
+                print(f"[SeeThrough] WARNING: Python PSD compilation failed: {e}. "
+                      f"Use the 'Download PSD' button as fallback.", flush=True)
+
+        if save_depth_psd:
+            try:
+                depth_psd_path = _build_psd_python(tag2pinfo, canvas_w, canvas_h, sorted_tags,
+                                                    output_dir, filename_prefix, ts, uid, psd_type="depth")
+            except Exception as e:
+                print(f"[SeeThrough] WARNING: Python depth PSD compilation failed: {e}.", flush=True)
+
+        print(f"[SeeThrough] {len(layer_info_list)} layers saved.", flush=True)
+        return (rgba_psd_path, depth_psd_path)
 
 
 NODE_CLASS_MAPPINGS = {
