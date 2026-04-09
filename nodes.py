@@ -755,35 +755,33 @@ class SeeThrough_PostProcess:
 
         print(f"[SeeThrough] PostProcess: splitting & clustering (has_depth={has_depth})...", flush=True)
 
-        # Fallback depth order for tags not in depth_dict.
-        # Use VALID_BODY_PARTS_V2 index (back=high value, front=low value) so layer
-        # ordering is anatomically sensible even without a real depth model.
-        # v3-only tags are mapped to their closest v2 equivalent.
+        # When no depth model is used, restrict to VALID_BODY_PARTS_V2 tags — exactly
+        # mirroring what GenerateDepth did (it only produced depth for those tags, so
+        # the original code's "if tag not in depth_dict: continue" guard had the same effect).
+        # v3-only tags like "head", "front hair", "back hair" are intentionally excluded
+        # because they overlap with their v2 equivalents and would cover them.
+        _allowed_tags = set(VALID_BODY_PARTS_V2) if not has_depth else None
+
+        # Fallback depth order: use VALID_BODY_PARTS_V2 index (0=back, 1=front).
+        # Lower index = further back in the scene.
         _V2_DEPTH_ORDER = {tag: i / max(len(VALID_BODY_PARTS_V2) - 1, 1)
                            for i, tag in enumerate(VALID_BODY_PARTS_V2)}
-        _V3_FALLBACK = {
-            "back hair":  _V2_DEPTH_ORDER.get("hair", 0.0),
-            "front hair": _V2_DEPTH_ORDER.get("hair", 0.0) - 0.01,
-            "head":       _V2_DEPTH_ORDER.get("face", 0.15) + 0.01,  # just behind face
-            "irides":     _V2_DEPTH_ORDER.get("eyes", 0.35),
-            "eyebrow":    _V2_DEPTH_ORDER.get("eyes", 0.35) - 0.005,
-            "eyewhite":   _V2_DEPTH_ORDER.get("eyes", 0.35) + 0.005,
-            "eyelash":    _V2_DEPTH_ORDER.get("eyes", 0.35) - 0.01,
-        }
 
-        def _fallback_depth(tag, resolution):
-            val = _V2_DEPTH_ORDER.get(tag, _V3_FALLBACK.get(tag, 0.5))
-            return np.full((resolution, resolution), fill_value=val, dtype=np.float32)
-
-        # Build tag2pinfo — depth is optional per-tag
+        # Build tag2pinfo
         tag2pinfo = {}
         for tag in layer_dict:
+            if _allowed_tags is not None and tag not in _allowed_tags:
+                continue
             img = layer_dict[tag]
             mask = img[..., -1] > 10
             if not np.any(mask):
                 continue
             entry = {"img": img, "xyxy": [0, 0, resolution, resolution], "mask": mask, "tag": tag}
-            entry["depth"] = depth_dict[tag] if tag in depth_dict else _fallback_depth(tag, resolution)
+            if tag in depth_dict:
+                entry["depth"] = depth_dict[tag]
+            else:
+                val = _V2_DEPTH_ORDER.get(tag, 0.5)
+                entry["depth"] = np.full((resolution, resolution), fill_value=val, dtype=np.float32)
             tag2pinfo[tag] = entry
 
         # Eye splitting (v2 composite 'eyes')
