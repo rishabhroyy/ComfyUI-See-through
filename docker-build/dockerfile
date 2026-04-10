@@ -1,6 +1,11 @@
 # Use the official RunPod ComfyUI base image
 FROM timpietruskyblibla/runpod-worker-comfy:3.6.0-base
 
+# 1. Install System Dependencies (Needed for SeeThrough/OpenCV)
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0
+
 # 2. Clone your custom nodes directly into the image
 # Replace these URLs with your specific custom node repos
 WORKDIR /comfyui/custom_nodes
@@ -8,6 +13,8 @@ RUN git clone https://github.com/rishabhroyy/ComfyUI-See-through.git
 
 # 3. Install Python dependencies for your custom nodes
 RUN pip install --no-cache-dir -r ComfyUI-See-through/requirements.txt
+
+RUN pip install "huggingface-hub>=0.26.0,<1.0" --force-reinstall
 
 # 4. Bake in the Models (The "Heavy" part)
 # We place them in the ComfyUI models directory so they are ready on boot
