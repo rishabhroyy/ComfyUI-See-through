@@ -4,7 +4,7 @@
 set -e
 
 echo "--- Installing Tailscale ---"
-curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --auth-key=tskey-auth-k6TcwrLqUf11CNTRL-2qvaqwGiSAYJPgNMkazQEYC144vSqYTRK
+
 
 echo "--- Installing System Dependencies & Build Essentials ---"
 sudo apt-get update
