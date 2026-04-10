@@ -2,7 +2,7 @@
 FROM timpietruskyblibla/runpod-worker-comfy:3.6.0-base
 
 # 1. Install System Dependencies (Needed for SeeThrough/OpenCV)
-RUN apt-get update && apt-get install -y libglib2.0-0t64
+RUN apt-get update && apt-get install -y libgtk2.0-dev
 
 # 2. Clone your custom nodes directly into the image
 # Replace these URLs with your specific custom node repos
