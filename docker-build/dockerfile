@@ -1,5 +1,5 @@
 # Use the official RunPod ComfyUI base image
-FROM runpod/worker-comfyui:v2-base
+FROM timpietruskyblibla/runpod-worker-comfy:latest-base
 
 # 1. Install System Dependencies (Needed for SeeThrough/OpenCV)
 RUN apt-get update && apt-get install -y \
