@@ -2,7 +2,9 @@
 FROM timpietruskyblibla/runpod-worker-comfy:3.6.0-base
 
 # 1. Install System Dependencies (Needed for SeeThrough/OpenCV)
-RUN apt-get update && apt-get install -y libgtk2.0-dev
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0
 
 # 2. Clone your custom nodes directly into the image
 # Replace these URLs with your specific custom node repos
@@ -16,8 +18,8 @@ RUN pip install "huggingface-hub>=0.26.0,<1.0" --force-reinstall
 
 # 4. Bake in the Models (The "Heavy" part)
 # We place them in the ComfyUI models directory so they are ready on boot
-COPY seethroughv0.0.2_layerdiff3d_nf4 /comfyui/models/SeeThrough/
-COPY seethroughv0.0.1_marigold_nf4 /comfyui/models/SeeThrough/
+COPY seethroughv0.0.2_layerdiff3d_nf4 /comfyui/models/SeeThrough
+COPY seethroughv0.0.1_marigold_nf4 /comfyui/models/SeeThrough
 
 # Set the working directory back to the root for the worker to start
 WORKDIR /
