@@ -921,7 +921,7 @@ class SeeThrough_SavePSD:
 
         if save_rgba_psd:
             try:
-                psd_path = os.path.join(output_dir, f"{base_name}.psd")
+                psd_path = os.path.join(output_dir, f"{base_name}.png")
                 rgba_psd_path = _build_psd_python(tag2pinfo, canvas_w, canvas_h, sorted_tags,
                                                    psd_path, psd_type="rgba")
             except Exception as e:
