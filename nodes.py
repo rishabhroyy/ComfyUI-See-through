@@ -936,7 +936,16 @@ class SeeThrough_SavePSD:
                 print(f"[SeeThrough] WARNING: Python depth PSD compilation failed: {e}.", flush=True)
 
         print(f"[SeeThrough] Done. RGBA PSD: {rgba_psd_path or '(skipped)'}, Depth PSD: {depth_psd_path or '(skipped)'}", flush=True)
-        return (rgba_psd_path, depth_psd_path)
+
+        # Satisfy ComfyUI's `if "images" in node_output` check without writing image files.
+        # Each entry just references the PSD path so callers can locate the output.
+        images_ui = []
+        if rgba_psd_path:
+            images_ui.append({"filename": os.path.basename(rgba_psd_path), "subfolder": "", "type": "output"})
+        if depth_psd_path:
+            images_ui.append({"filename": os.path.basename(depth_psd_path), "subfolder": "", "type": "output"})
+
+        return {"ui": {"images": images_ui}, "result": (rgba_psd_path, depth_psd_path)}
 
 
 NODE_CLASS_MAPPINGS = {
