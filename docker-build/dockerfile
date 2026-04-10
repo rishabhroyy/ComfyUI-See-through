@@ -18,8 +18,8 @@ RUN pip install "huggingface-hub>=0.26.0,<1.0" --force-reinstall
 
 # 4. Bake in the Models (The "Heavy" part)
 # We place them in the ComfyUI models directory so they are ready on boot
-COPY seethroughv0.0.2_layerdiff3d_nf4 /comfyui/models/SeeThrough
-COPY seethroughv0.0.1_marigold_nf4 /comfyui/models/SeeThrough
+COPY seethroughv0.0.2_layerdiff3d_nf4/ /comfyui/models/SeeThrough/seethroughv0.0.2_layerdiff3d_nf4/
+COPY seethroughv0.0.1_marigold_nf4 /comfyui/models/SeeThrough/seethroughv0.0.1_marigold_nf4/
 
 # Set the working directory back to the root for the worker to start
 WORKDIR /
