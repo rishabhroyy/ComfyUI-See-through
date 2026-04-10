@@ -1,13 +1,6 @@
 # Use the official RunPod ComfyUI base image
 FROM timpietruskyblibla/runpod-worker-comfy:3.6.0-base
 
-# 1. Install System Dependencies (Needed for SeeThrough/OpenCV)
-RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
 # 2. Clone your custom nodes directly into the image
 # Replace these URLs with your specific custom node repos
 WORKDIR /comfyui/custom_nodes
